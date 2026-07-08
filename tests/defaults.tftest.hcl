@@ -37,6 +37,15 @@ variables {
     }
   }
 
+  manual_alerts = {
+    phish = {
+      title       = "Suspected phishing"
+      description = "A user reported a phishing email."
+      severity    = "medium"
+      category    = "InitialAccess"
+    }
+  }
+
   security_resources = {
     rule = {
       url         = "security/rules/detectionRules"
@@ -108,6 +117,25 @@ run "comment_body_has_odata_type" {
   assert {
     condition     = msgraph_resource_action.incident_comments["note"].body.comment == "Triaged by Terraform."
     error_message = "The comment text should be carried onto the action body."
+  }
+}
+
+run "manual_alert_posts_to_alerts_v2_with_typed_body" {
+  command = plan
+
+  assert {
+    condition     = msgraph_resource.manual_alerts["phish"].url == "security/alerts_v2"
+    error_message = "createManualAlert should POST to security/alerts_v2."
+  }
+
+  assert {
+    condition     = msgraph_resource.manual_alerts["phish"].body.title == "Suspected phishing"
+    error_message = "The typed title should be carried onto the manual alert body."
+  }
+
+  assert {
+    condition     = msgraph_resource.manual_alerts["phish"].api_version == "beta"
+    error_message = "createManualAlert defaults to the beta API version."
   }
 }
 

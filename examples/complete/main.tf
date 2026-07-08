@@ -59,6 +59,18 @@ module "security" {
     }
   }
 
+  # Raise a manual alert (createManualAlert, POST /security/alerts_v2, documented on beta). This is
+  # a real create and is how a custom alert rolls up into a Defender incident.
+  manual_alerts = {
+    reported-phish = {
+      title            = "User-reported phishing email"
+      description      = "A user reported a suspicious email that passed mail filtering."
+      severity         = "medium"
+      category         = "InitialAccess"
+      mitre_techniques = ["T1566"]
+    }
+  }
+
   # A custom detection rule (beta): the documented mechanism for generating custom alerts and
   # incidents into the Defender portal.
   security_resources = {

@@ -25,6 +25,21 @@ locals {
       v.body != null ? v.body : {},
     )
   }
+
+  # Build the manual-alert (createManualAlert) bodies from the typed fields plus the raw body.
+  manual_alert_bodies = {
+    for k, v in var.manual_alerts : k => merge(
+      { for kk, vv in {
+        title              = v.title
+        description        = v.description
+        severity           = v.severity
+        category           = v.category
+        recommendedActions = v.recommended_actions
+        mitreTechniques    = v.mitre_techniques
+      } : kk => vv if vv != null },
+      v.body != null ? v.body : {},
+    )
+  }
 }
 
 # ---- CREATE incidents (experimental, beta) ----
@@ -63,13 +78,13 @@ resource "msgraph_resource_action" "incident_comments" {
   }
 }
 
-# ---- CREATE alerts (experimental, beta) ----
-resource "msgraph_resource" "alerts" {
-  for_each = var.alerts
+# ---- CREATE a manual alert (createManualAlert): POST /security/alerts_v2 (documented on beta) ----
+resource "msgraph_resource" "manual_alerts" {
+  for_each = var.manual_alerts
 
   url                    = "security/alerts_v2"
   api_version            = coalesce(each.value.api_version, "beta")
-  body                   = each.value.body
+  body                   = local.manual_alert_bodies[each.key]
   update_method          = coalesce(each.value.update_method, "PATCH")
   response_export_values = each.value.response_export_values
 }

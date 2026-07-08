@@ -46,11 +46,13 @@ one. This module targets Graph so the changes land where analysts now work.
 - **Comments** on incidents: **documented** (`POST /security/incidents/{id}/comments`).
 - **Custom detection rules** (`security/rules/detectionRules`, beta): the **documented** way to have
   custom alerts and incidents generated into the Defender portal. Managed here via `security_resources`.
-- **Creating incidents / alerts directly**: **experimental and unverified.** Microsoft documents
-  incidents and alerts as system-generated and publishes no create operation, but the beta metadata
-  exposes a `POST` on the collections. The `incidents` and `alerts` inputs attempt that `POST` so it
-  can be tested against a licensed tenant; do not rely on it until you have. A check block warns
-  whenever these inputs are used.
+- **Creating a manual alert** (`createManualAlert`, `POST /security/alerts_v2`, beta): **documented.**
+  This is a real, supported create and the way to raise a custom alert that rolls up into a Defender
+  incident. Managed here via `manual_alerts` (title, description, severity and category are required).
+- **Creating incidents directly**: **experimental and unverified.** Microsoft documents incidents as
+  system-generated and publishes no create operation, but the beta metadata exposes a `POST` on the
+  collection. The `incidents` input attempts that `POST` so it can be tested against a licensed
+  tenant; do not rely on it until you have.
 
 ## Inputs at a glance
 
@@ -59,8 +61,9 @@ one. This module targets Graph so the changes land where analysts now work.
 | `incident_updates` | PATCH an existing incident | `msgraph_update_resource` (destroy is a no-op) |
 | `incident_comments` | POST a comment | `msgraph_resource_action` |
 | `alert_updates` | PATCH an existing alert | `msgraph_update_resource` |
+| `manual_alerts` | create a manual alert (createManualAlert, documented) | `msgraph_resource` |
 | `security_resources` | full CRUD on any security resource (detection rules, ...) | `msgraph_resource` |
-| `incidents` / `alerts` | experimental create (beta) | `msgraph_resource` |
+| `incidents` | experimental incident create (beta, unverified) | `msgraph_resource` |
 
 ## Minimum permissions
 
@@ -99,8 +102,8 @@ No modules.
 
 | Name | Type |
 |------|------|
-| [msgraph_resource.alerts](https://registry.terraform.io/providers/Microsoft/msgraph/latest/docs/resources/resource) | resource |
 | [msgraph_resource.incidents](https://registry.terraform.io/providers/Microsoft/msgraph/latest/docs/resources/resource) | resource |
+| [msgraph_resource.manual_alerts](https://registry.terraform.io/providers/Microsoft/msgraph/latest/docs/resources/resource) | resource |
 | [msgraph_resource.security_resources](https://registry.terraform.io/providers/Microsoft/msgraph/latest/docs/resources/resource) | resource |
 | [msgraph_resource_action.incident_comments](https://registry.terraform.io/providers/Microsoft/msgraph/latest/docs/resources/resource_action) | resource |
 | [msgraph_update_resource.alert_updates](https://registry.terraform.io/providers/Microsoft/msgraph/latest/docs/resources/update_resource) | resource |
@@ -111,25 +114,25 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_alert_updates"></a> [alert\_updates](#input\_alert\_updates) | Existing alerts (alerts\_v2) to update (triage), keyed by a stable logical name. Patches the<br/>alert identified by alert\_id. Typed fields cover the common updatable properties; use body for<br/>anything else (merged over the typed fields). | <pre>map(object({<br/>    alert_id               = string<br/>    api_version            = optional(string)<br/>    status                 = optional(string)<br/>    classification         = optional(string)<br/>    determination          = optional(string)<br/>    assigned_to            = optional(string)<br/>    body                   = optional(any)<br/>    response_export_values = optional(map(string))<br/>  }))</pre> | `{}` | no |
-| <a name="input_alerts"></a> [alerts](#input\_alerts) | Security alerts (alerts\_v2) to create and manage, keyed by a stable logical name. EXPERIMENTAL:<br/>creating alerts through Graph is a beta, undocumented capability; verify against your tenant.<br/>body is the raw alert object. api\_version defaults to beta. | <pre>map(object({<br/>    body                   = any<br/>    api_version            = optional(string)<br/>    update_method          = optional(string)<br/>    response_export_values = optional(map(string))<br/>  }))</pre> | `{}` | no |
 | <a name="input_default_api_version"></a> [default\_api\_version](#input\_default\_api\_version) | Default Microsoft Graph API version for operations that do not set their own. One of "v1.0" or<br/>"beta". Update and comment operations are documented on v1.0 (stable) and default to it. The<br/>create operations (incidents, alerts) are only exposed on beta, so they default to beta<br/>regardless of this value unless you pin api\_version on the entry. | `string` | `"v1.0"` | no |
 | <a name="input_incident_comments"></a> [incident\_comments](#input\_incident\_comments) | Comments to add to existing incidents, keyed by a stable logical name. Each posts one comment to the incident identified by incident\_id. Adding a comment is a one-time action (not removed on destroy). | <pre>map(object({<br/>    incident_id = string<br/>    comment     = string<br/>    api_version = optional(string)<br/>  }))</pre> | `{}` | no |
 | <a name="input_incident_updates"></a> [incident\_updates](#input\_incident\_updates) | Existing security incidents to update (triage), keyed by a stable logical name. Patches the<br/>incident identified by incident\_id. The typed fields cover the common updatable properties; use<br/>body to set anything else (it is merged over the typed fields). | <pre>map(object({<br/>    incident_id            = string<br/>    api_version            = optional(string)<br/>    status                 = optional(string)<br/>    classification         = optional(string)<br/>    determination          = optional(string)<br/>    assigned_to            = optional(string)<br/>    custom_tags            = optional(list(string))<br/>    body                   = optional(any)<br/>    response_export_values = optional(map(string))<br/>  }))</pre> | `{}` | no |
 | <a name="input_incidents"></a> [incidents](#input\_incidents) | Security incidents to create and manage, keyed by a stable logical name. EXPERIMENTAL: creating<br/>incidents through Graph is a beta, undocumented capability; verify it against your tenant. body<br/>is the raw incident object (for example displayName, severity, status, classification,<br/>determination, customTags). api\_version defaults to beta because create is beta only. | <pre>map(object({<br/>    body                   = any<br/>    api_version            = optional(string)<br/>    update_method          = optional(string)<br/>    response_export_values = optional(map(string))<br/>  }))</pre> | `{}` | no |
+| <a name="input_manual_alerts"></a> [manual\_alerts](#input\_manual\_alerts) | Manual alerts to create via the createManualAlert operation (POST /security/alerts\_v2), keyed by<br/>a stable logical name. The typed fields cover the documented properties; title, description,<br/>severity and category are required by the API. Anything else can be set through body (merged over<br/>the typed fields). api\_version defaults to beta, where this operation is documented. | <pre>map(object({<br/>    title                  = optional(string)<br/>    description            = optional(string)<br/>    severity               = optional(string)<br/>    category               = optional(string)<br/>    recommended_actions    = optional(string)<br/>    mitre_techniques       = optional(list(string))<br/>    body                   = optional(any)<br/>    api_version            = optional(string)<br/>    update_method          = optional(string)<br/>    response_export_values = optional(map(string))<br/>  }))</pre> | `{}` | no |
 | <a name="input_security_resources"></a> [security\_resources](#input\_security\_resources) | Arbitrary Graph security resources to manage with full CRUD, keyed by a stable logical name.<br/>url is the collection URL (for example "security/rules/detectionRules"), body is the resource<br/>object. Use this for endpoints without a first-class input above, notably custom detection<br/>rules, which generate alerts and incidents that surface in the Defender portal. | <pre>map(object({<br/>    url                    = string<br/>    body                   = any<br/>    api_version            = optional(string)<br/>    update_method          = optional(string)<br/>    response_export_values = optional(map(string))<br/>  }))</pre> | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_alert_ids"></a> [alert\_ids](#output\_alert\_ids) | Map of alert key to the created alert resource id (experimental create path). |
 | <a name="output_alert_update_ids"></a> [alert\_update\_ids](#output\_alert\_update\_ids) | Map of alert-update key to the target alert resource id. |
 | <a name="output_alert_update_outputs"></a> [alert\_update\_outputs](#output\_alert\_update\_outputs) | Map of alert-update key to its exported response values. |
-| <a name="output_alerts"></a> [alerts](#output\_alerts) | Map of alert key to its resource url and exported response values (create path). |
 | <a name="output_incident_comment_outputs"></a> [incident\_comment\_outputs](#output\_incident\_comment\_outputs) | Map of incident-comment key to the action response. |
 | <a name="output_incident_ids"></a> [incident\_ids](#output\_incident\_ids) | Map of incident key to the created incident resource id (only for incidents created via the experimental create path). |
 | <a name="output_incident_update_ids"></a> [incident\_update\_ids](#output\_incident\_update\_ids) | Map of incident-update key to the target incident resource id. |
 | <a name="output_incident_update_outputs"></a> [incident\_update\_outputs](#output\_incident\_update\_outputs) | Map of incident-update key to its exported response values. |
 | <a name="output_incidents"></a> [incidents](#output\_incidents) | Map of incident key to its resource url and exported response values (create path). |
+| <a name="output_manual_alert_ids"></a> [manual\_alert\_ids](#output\_manual\_alert\_ids) | Map of manual-alert key to the created alert resource id. |
+| <a name="output_manual_alerts"></a> [manual\_alerts](#output\_manual\_alerts) | Map of manual-alert key to its resource url and exported response values. |
 | <a name="output_security_resources"></a> [security\_resources](#output\_security\_resources) | Map of security-resource key to its resource url and exported response values. |
 <!-- END_TF_DOCS -->

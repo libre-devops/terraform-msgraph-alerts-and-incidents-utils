@@ -1,8 +1,3 @@
-output "alert_ids" {
-  description = "Map of alert key to the created alert resource id (experimental create path)."
-  value       = { for k, v in msgraph_resource.alerts : k => v.id }
-}
-
 output "alert_update_ids" {
   description = "Map of alert-update key to the target alert resource id."
   value       = { for k, v in msgraph_update_resource.alert_updates : k => v.id }
@@ -11,11 +6,6 @@ output "alert_update_ids" {
 output "alert_update_outputs" {
   description = "Map of alert-update key to its exported response values."
   value       = { for k, v in msgraph_update_resource.alert_updates : k => v.output }
-}
-
-output "alerts" {
-  description = "Map of alert key to its resource url and exported response values (create path)."
-  value       = { for k, v in msgraph_resource.alerts : k => { id = v.id, resource_url = v.resource_url, output = v.output } }
 }
 
 output "incident_comment_outputs" {
@@ -41,6 +31,16 @@ output "incident_update_outputs" {
 output "incidents" {
   description = "Map of incident key to its resource url and exported response values (create path)."
   value       = { for k, v in msgraph_resource.incidents : k => { id = v.id, resource_url = v.resource_url, output = v.output } }
+}
+
+output "manual_alert_ids" {
+  description = "Map of manual-alert key to the created alert resource id."
+  value       = { for k, v in msgraph_resource.manual_alerts : k => v.id }
+}
+
+output "manual_alerts" {
+  description = "Map of manual-alert key to its resource url and exported response values."
+  value       = { for k, v in msgraph_resource.manual_alerts : k => { id = v.id, resource_url = v.resource_url, output = v.output } }
 }
 
 output "security_resources" {

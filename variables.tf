@@ -38,26 +38,6 @@ variable "alert_updates" {
   }
 }
 
-# ---------------------------------------------------------------------------------------------------
-# CREATE alerts (EXPERIMENTAL), same caveat as incidents. POST /security/alerts_v2.
-# ---------------------------------------------------------------------------------------------------
-variable "alerts" {
-  description = <<-DESC
-    Security alerts (alerts_v2) to create and manage, keyed by a stable logical name. EXPERIMENTAL:
-    creating alerts through Graph is a beta, undocumented capability; verify against your tenant.
-    body is the raw alert object. api_version defaults to beta.
-  DESC
-
-  type = map(object({
-    body                   = any
-    api_version            = optional(string)
-    update_method          = optional(string)
-    response_export_values = optional(map(string))
-  }))
-
-  default = {}
-}
-
 variable "default_api_version" {
   description = <<-DESC
     Default Microsoft Graph API version for operations that do not set their own. One of "v1.0" or
@@ -153,6 +133,43 @@ variable "incidents" {
   }))
 
   default = {}
+}
+
+# ---------------------------------------------------------------------------------------------------
+# CREATE a manual alert (createManualAlert): POST /security/alerts_v2. Documented on beta. This is a
+# real, supported create (unlike incidents), and is how you raise a custom alert that rolls up into a
+# Defender incident. title, description, severity and category are required by the API.
+# ---------------------------------------------------------------------------------------------------
+variable "manual_alerts" {
+  description = <<-DESC
+    Manual alerts to create via the createManualAlert operation (POST /security/alerts_v2), keyed by
+    a stable logical name. The typed fields cover the documented properties; title, description,
+    severity and category are required by the API. Anything else can be set through body (merged over
+    the typed fields). api_version defaults to beta, where this operation is documented.
+  DESC
+
+  type = map(object({
+    title                  = optional(string)
+    description            = optional(string)
+    severity               = optional(string)
+    category               = optional(string)
+    recommended_actions    = optional(string)
+    mitre_techniques       = optional(list(string))
+    body                   = optional(any)
+    api_version            = optional(string)
+    update_method          = optional(string)
+    response_export_values = optional(map(string))
+  }))
+
+  default = {}
+
+  validation {
+    condition = alltrue([
+      for k, v in var.manual_alerts :
+      v.severity == null ? true : contains(["unknown", "informational", "low", "medium", "high"], v.severity)
+    ])
+    error_message = "manual_alerts severity must be one of unknown, informational, low, medium or high."
+  }
 }
 
 # ---------------------------------------------------------------------------------------------------

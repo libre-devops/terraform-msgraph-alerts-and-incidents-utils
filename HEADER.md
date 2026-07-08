@@ -46,11 +46,13 @@ one. This module targets Graph so the changes land where analysts now work.
 - **Comments** on incidents: **documented** (`POST /security/incidents/{id}/comments`).
 - **Custom detection rules** (`security/rules/detectionRules`, beta): the **documented** way to have
   custom alerts and incidents generated into the Defender portal. Managed here via `security_resources`.
-- **Creating incidents / alerts directly**: **experimental and unverified.** Microsoft documents
-  incidents and alerts as system-generated and publishes no create operation, but the beta metadata
-  exposes a `POST` on the collections. The `incidents` and `alerts` inputs attempt that `POST` so it
-  can be tested against a licensed tenant; do not rely on it until you have. A check block warns
-  whenever these inputs are used.
+- **Creating a manual alert** (`createManualAlert`, `POST /security/alerts_v2`, beta): **documented.**
+  This is a real, supported create and the way to raise a custom alert that rolls up into a Defender
+  incident. Managed here via `manual_alerts` (title, description, severity and category are required).
+- **Creating incidents directly**: **experimental and unverified.** Microsoft documents incidents as
+  system-generated and publishes no create operation, but the beta metadata exposes a `POST` on the
+  collection. The `incidents` input attempts that `POST` so it can be tested against a licensed
+  tenant; do not rely on it until you have.
 
 ## Inputs at a glance
 
@@ -59,8 +61,9 @@ one. This module targets Graph so the changes land where analysts now work.
 | `incident_updates` | PATCH an existing incident | `msgraph_update_resource` (destroy is a no-op) |
 | `incident_comments` | POST a comment | `msgraph_resource_action` |
 | `alert_updates` | PATCH an existing alert | `msgraph_update_resource` |
+| `manual_alerts` | create a manual alert (createManualAlert, documented) | `msgraph_resource` |
 | `security_resources` | full CRUD on any security resource (detection rules, ...) | `msgraph_resource` |
-| `incidents` / `alerts` | experimental create (beta) | `msgraph_resource` |
+| `incidents` | experimental incident create (beta, unverified) | `msgraph_resource` |
 
 ## Minimum permissions
 
