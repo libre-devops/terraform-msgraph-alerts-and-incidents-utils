@@ -18,9 +18,9 @@ check "manual_alert_required_fields" {
   assert {
     condition = alltrue([
       for k, v in var.manual_alerts :
-      v.body != null ? true : (v.title != null && v.description != null && v.severity != null && v.category != null)
+      v.body != null ? true : (v.title != null && v.description != null && v.severity != null && v.category != null && length(v.entity_definitions) >= 1)
     ])
-    error_message = "Each manual_alerts entry must set title, description, severity and category (or supply them through body)."
+    error_message = "Each manual_alerts entry must set title, description, severity, category and 1 to 100 entity_definitions (or supply them through body)."
   }
 }
 

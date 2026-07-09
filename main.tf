@@ -30,12 +30,25 @@ locals {
   manual_alert_bodies = {
     for k, v in var.manual_alerts : k => merge(
       { for kk, vv in {
-        title              = v.title
-        description        = v.description
-        severity           = v.severity
-        category           = v.category
-        recommendedActions = v.recommended_actions
-        mitreTechniques    = v.mitre_techniques
+        # @odata.type is a required polymorphic discriminator; without it createManualAlert 500s.
+        "@odata.type"             = "#microsoft.graph.security.manualAlert"
+        title                     = v.title
+        description               = v.description
+        severity                  = v.severity
+        category                  = v.category
+        recommendedActions        = v.recommended_actions
+        mitreTechniques           = v.mitre_techniques
+        sentinelWorkspace         = v.sentinel_workspace
+        linkToIncident            = v.link_to_incident
+        isExcludedFromCorrelation = v.is_excluded_from_correlation
+        entityDefinitions = length(v.entity_definitions) > 0 ? [
+          for e in v.entity_definitions : {
+            entityType       = e.entity_type
+            entityIdentifier = e.entity_identifier
+            identifierValue  = e.identifier_value
+            role             = e.role
+          }
+        ] : null
       } : kk => vv if vv != null },
       v.body != null ? v.body : {},
     )

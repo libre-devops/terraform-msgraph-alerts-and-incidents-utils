@@ -43,6 +43,9 @@ variables {
       description = "A user reported a phishing email."
       severity    = "medium"
       category    = "InitialAccess"
+      entity_definitions = [
+        { entity_type = "user", entity_identifier = "userPrincipalName", identifier_value = "victim@example.com", role = "impacted" },
+      ]
     }
   }
 

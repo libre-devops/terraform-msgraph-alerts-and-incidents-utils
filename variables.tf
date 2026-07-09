@@ -143,18 +143,33 @@ variable "incidents" {
 variable "manual_alerts" {
   description = <<-DESC
     Manual alerts to create via the createManualAlert operation (POST /security/alerts_v2), keyed by
-    a stable logical name. The typed fields cover the documented properties; title, description,
-    severity and category are required by the API. Anything else can be set through body (merged over
-    the typed fields). api_version defaults to beta, where this operation is documented.
+    a stable logical name. The module always sends the required @odata.type
+    (#microsoft.graph.security.manualAlert). title, description, severity, category and
+    entity_definitions (1 to 100) are required by the API; the rest are optional. Anything else can
+    be set through body (merged over the typed fields). Creating a manual alert makes Defender open
+    (or, with link_to_incident, link to) an incident. api_version defaults to beta.
   DESC
 
   type = map(object({
-    title                  = optional(string)
-    description            = optional(string)
-    severity               = optional(string)
-    category               = optional(string)
-    recommended_actions    = optional(string)
-    mitre_techniques       = optional(list(string))
+    title       = optional(string)
+    description = optional(string)
+    severity    = optional(string)
+    category    = optional(string)
+
+    # 1 to 100 impacted/related entities. Required by the API (supply via body if you prefer).
+    entity_definitions = optional(list(object({
+      entity_type       = string # user, ip, device, file, ...
+      entity_identifier = string # userPrincipalName, address, deviceName, sha256, ...
+      identifier_value  = string
+      role              = optional(string, "impacted") # impacted | related
+    })), [])
+
+    recommended_actions          = optional(string)
+    mitre_techniques             = optional(list(string))
+    sentinel_workspace           = optional(string) # route the alert to a Sentinel workspace
+    link_to_incident             = optional(number) # link to an existing incident id instead of a new one
+    is_excluded_from_correlation = optional(bool)
+
     body                   = optional(any)
     api_version            = optional(string)
     update_method          = optional(string)
@@ -169,6 +184,21 @@ variable "manual_alerts" {
       v.severity == null ? true : contains(["unknown", "informational", "low", "medium", "high"], v.severity)
     ])
     error_message = "manual_alerts severity must be one of unknown, informational, low, medium or high."
+  }
+
+  validation {
+    condition = alltrue([
+      for k, v in var.manual_alerts :
+      length(v.entity_definitions) <= 100 && (length(v.entity_definitions) >= 1 || v.body != null)
+    ])
+    error_message = "each manual_alerts entry needs 1 to 100 entity_definitions (or supply entityDefinitions through body)."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for v in var.manual_alerts : [for e in v.entity_definitions : contains(["impacted", "related"], e.role)]
+    ]))
+    error_message = "entity_definitions role must be impacted or related."
   }
 }
 

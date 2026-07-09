@@ -68,6 +68,16 @@ module "security" {
       severity         = "medium"
       category         = "InitialAccess"
       mitre_techniques = ["T1566"]
+
+      # 1 to 100 entities are required. Defender opens an incident containing the alert.
+      entity_definitions = [
+        {
+          entity_type       = "user"
+          entity_identifier = "userPrincipalName"
+          identifier_value  = "reported.user@example.com"
+          role              = "impacted"
+        },
+      ]
     }
   }
 
